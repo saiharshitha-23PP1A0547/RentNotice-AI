@@ -1,0 +1,6 @@
+{
+  "name": "RentNotice AI",
+  "description": "AI Legal Notice Generator for India - Draft professional property notices and rental agreements with verified Indian law references.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
