@@ -1,6 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 
@@ -12,7 +13,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 // Initialize Google GenAI
 const apiKey = process.env.GEMINI_API_KEY;
@@ -114,7 +115,6 @@ Return ONLY valid JSON format without markdown code fences or conversational tex
     try {
       result = JSON.parse(responseText);
     } catch (parseErr) {
-      // Fallback parse if wrapped in markdown
       const cleaned = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       result = JSON.parse(cleaned);
     }
@@ -126,7 +126,6 @@ Return ONLY valid JSON format without markdown code fences or conversational tex
     });
   } catch (error: any) {
     console.error('Error generating notice:', error);
-    // Fallback to mock on error so user experience is uninterrupted
     res.json({
       success: true,
       source: 'mock-fallback',
@@ -267,20 +266,23 @@ function generateMockNotice(data: any) {
   };
 }
 
-// Vite middleware integration for development
-if (process.env.NODE_ENV !== 'production') {
+// Static files / Vite middleware setup
+const isProd = process.env.NODE_ENV === 'production' || fs.existsSync(path.join(__dirname, 'dist'));
+
+if (!isProd) {
   const { createServer: createViteServer } = await import('vite');
   const vite = await createViteServer({
     server: { middlewareMode: true, hmr: false }
   });
   app.use(vite.middlewares);
 } else {
-  app.use(express.static(path.join(__dirname, 'dist')));
+  const distPath = path.join(__dirname, 'dist');
+  app.use(express.static(distPath));
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
 app.listen(port, () => {
-  console.log(`RentNotice AI server running on port ${port}`);
+  console.log(`RentNotice AI server running on port ${port} (prod mode: ${isProd})`);
 });
