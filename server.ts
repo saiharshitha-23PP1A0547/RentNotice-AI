@@ -1,7 +1,6 @@
 import express from 'express';
-import { fileURLToPath } from 'url';
 import path from 'path';
-import fs from 'fs';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 
@@ -13,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 
-const port = process.env.PORT || 8080;
+const port = Number(process.env.PORT) || 8080;
 
 // Initialize Google GenAI
 const apiKey = process.env.GEMINI_API_KEY;
@@ -43,7 +42,6 @@ app.post('/api/ai/generate-notice', async (req, res) => {
     } = req.body;
 
     if (!apiKey) {
-      // Fallback mock generation if API key is not configured
       return res.json({
         success: true,
         source: 'mock',
@@ -266,23 +264,14 @@ function generateMockNotice(data: any) {
   };
 }
 
-// Static files / Vite middleware setup
-const isProd = process.env.NODE_ENV === 'production' || fs.existsSync(path.join(__dirname, 'dist'));
+// Serve static files from dist directory
+const distPath = path.join(__dirname, 'dist');
+app.use(express.static(distPath));
 
-if (!isProd) {
-  const { createServer: createViteServer } = await import('vite');
-  const vite = await createViteServer({
-    server: { middlewareMode: true, hmr: false }
-  });
-  app.use(vite.middlewares);
-} else {
-  const distPath = path.join(__dirname, 'dist');
-  app.use(express.static(distPath));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
-}
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
 
-app.listen(port, () => {
-  console.log(`RentNotice AI server running on port ${port} (prod mode: ${isProd})`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`RentNotice AI server running on port ${port}`);
 });
